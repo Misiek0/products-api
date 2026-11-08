@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      # ":?" przerywa start z czytelnym błędem, gdy brakuje .env
+      POSTGRES_USER: ${POSTGRES_USER:?brak POSTGRES_USER w .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?brak POSTGRES_PASSWORD w .env}
+      POSTGRES_DB: ${POSTGRES_DB:?brak POSTGRES_DB w .env}
+    volumes:
+      # Wolumen nazwany: dane przeżywają `docker compose down`
+      # (usuwa je dopiero `down -v`).
+      - pgdata:/var/lib/postgresql/data
+    # Celowo bez "ports": baza jest dostępna tylko z sieci compose (KISS, bezpieczniej).
+
+  api:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      # Bind mount kodu: zmiany w ./app są widoczne w kontenerze od razu.
+      - ./app:/code/app
+
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  tests:
+    build:
+      context: ./tests            # kontekst = tests/, bo tam jest Dockerfile i requirements
+    profiles: ["test"]            # nie startuje przy zwykłym `docker compose up`
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8000
+    volumes:
+      - ./tests:/tests
+
+volumes:
+  pgdata:
