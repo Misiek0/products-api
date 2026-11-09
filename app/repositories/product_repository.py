@@ -14,3 +14,6 @@ class ProductRepository:
 
     def get_all(self) -> Sequence[Product]:
         return self.db.scalars(select(Product).order_by(Product.id)).all()
+
+    def get_by_id(self, product_id: int) -> Product | None:
+        return self.db.get(Product, product_id)
