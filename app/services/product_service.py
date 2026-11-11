@@ -72,3 +72,9 @@ class ProductService:
         existing = self.repository.get_by_name(name)
         if existing is not None and existing.id != exclude_id:
             raise DuplicateProductNameError(name)
+
+    def delete_product(self, product_id: int) -> None:
+        # Reuse get_product so a missing id raises ProductNotFoundError
+        # (mapped to 404) with the same behavior as the other endpoints.
+        product = self.get_product(product_id)
+        self.repository.delete(product)
