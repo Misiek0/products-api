@@ -55,3 +55,14 @@ def update_product(
     # Not-found, duplicate-name and price errors are all mapped to HTTP
     # by the global handlers, so the router stays free of error handling.
     return service.update_product(product_id, data)
+
+
+# 204 No Content: the resource is gone, so there is no body to return.
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_product(
+    product_id: int,
+    service: ProductService = Depends(get_product_service),
+) -> None:
+    # A missing id is turned into 404 by the global error handler.
+    service.delete_product(product_id)
+    
