@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.product_repository import ProductRepository
-from app.schemas.product import ProductCreate, ProductListItem, ProductRead
+from app.schemas.product import (
+    ProductCreate,
+    ProductListItem,
+    ProductRead,
+    ProductUpdate,
+)
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -38,3 +43,15 @@ def create_product(
     service: ProductService = Depends(get_product_service),
 ) -> ProductRead:
     return service.create_product(data)
+
+
+# 200 OK (the default): the resource already existed and is returned updated.
+@router.put("/{product_id}", response_model=ProductRead)
+def update_product(
+    product_id: int,
+    data: ProductUpdate,
+    service: ProductService = Depends(get_product_service),
+) -> ProductRead:
+    # Not-found, duplicate-name and price errors are all mapped to HTTP
+    # by the global handlers, so the router stays free of error handling.
+    return service.update_product(product_id, data)
