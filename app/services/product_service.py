@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from app.models.product import Category, Product
 from app.repositories.product_repository import ProductRepository
-from app.schemas.product import ProductCreate
+from app.schemas.product import ProductCreate, ProductUpdate
 from app.services.exceptions import (
     DuplicateProductNameError,
     PriceOutOfRangeError,
@@ -47,11 +47,28 @@ class ProductService:
         )
         return self.repository.create(product)
 
+    def update_product(self, product_id: int, data: ProductUpdate) -> Product:
+        # 404 comes first: there is no point validating data for a
+        # resource that does not exist.
+        product = self.get_product(product_id)
+        self._ensure_price_in_range(data.category, data.price)
+        # Exclude the product being edited, otherwise saving it with
+        # its own unchanged name would be reported as a duplicate.
+        self._ensure_name_is_unique(data.name, exclude_id=product_id)
+        # All checks passed, so it is safe to modify the loaded object.
+        # Doing it earlier could leave a half-changed object in the session.
+        product.name = data.name
+        product.category = data.category.value
+        product.price = data.price
+        product.quantity = data.quantity
+        return self.repository.update(product)
+
     def _ensure_price_in_range(self, category: Category, price: Decimal) -> None:
         minimum, maximum = PRICE_LIMITS[category]
         if not minimum <= price <= maximum:
             raise PriceOutOfRangeError(category.value, minimum, maximum)
 
-    def _ensure_name_is_unique(self, name: str) -> None:
-        if self.repository.get_by_name(name) is not None:
+    def _ensure_name_is_unique(self, name: str, exclude_id: int | None = None) -> None:
+        existing = self.repository.get_by_name(name)
+        if existing is not None and existing.id != exclude_id:
             raise DuplicateProductNameError(name)
