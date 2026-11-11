@@ -1,7 +1,10 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-import app.models
+
+from fastapi import FastAPI
+
+import app.models  # noqa: F401  (registers models in Base.metadata)
 from app.database import Base, engine
+from app.error_handlers import register_error_handlers
 from app.routers import products
 
 
@@ -12,4 +15,5 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Products API", lifespan=lifespan)
+register_error_handlers(app)
 app.include_router(products.router, prefix="/api/v1")
