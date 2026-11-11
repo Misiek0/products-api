@@ -1,36 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.product_repository import ProductRepository
-from app.schemas.product import ProductRead
-from app.services.exceptions import ProductNotFoundError
+from app.schemas.product import ProductCreate, ProductListItem, ProductRead
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["products"])
 
 
 def get_product_service(db: Session = Depends(get_db)) -> ProductService:
-    """Składa warstwy przez wstrzykiwanie zależności. W testach
-    można podmienić całą usługę przez dependency_overrides."""
+    """Wires the layers together through dependency injection."""
     return ProductService(ProductRepository(db))
 
 
-@router.get("", response_model=list[ProductRead])
+# The list returns only the key fields; details return everything.
+@router.get("", response_model=list[ProductListItem])
 def list_products(
     service: ProductService = Depends(get_product_service),
-) -> list[ProductRead]:
+) -> list[ProductListItem]:
     return service.list_products()
+
 
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(
-        product_id: int,
-        service: ProductService = Depends(get_product_service),
+    product_id: int,
+    service: ProductService = Depends(get_product_service),
 ) -> ProductRead:
-    try:
-        return service.get_product(product_id)
-    except ProductNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
-        )
+    # No try/except: ProductNotFoundError is turned into 404 by the
+    # handler registered in error_handlers.py.
+    return service.get_product(product_id)
+
+
+@router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
+def create_product(
+    data: ProductCreate,
+    service: ProductService = Depends(get_product_service),
+) -> ProductRead:
+    return service.create_product(data)
