@@ -29,3 +29,10 @@ class ProductRepository:
         # refresh loads database-generated values (e.g. id).
         self.db.refresh(product)
         return product
+
+    def update(self, product: Product) -> Product:
+        # The object was loaded through this session, so SQLAlchemy already
+        # tracks its changes: commit is enough to persist them.
+        self.db.commit()
+        self.db.refresh(product)
+        return product
