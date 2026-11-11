@@ -36,3 +36,9 @@ class ProductRepository:
         self.db.commit()
         self.db.refresh(product)
         return product
+
+    def delete(self, product: Product) -> None:
+        self.db.delete(product)
+        # Commit lives in the repository, which owns persistence.
+        # Nothing to refresh: the row no longer exists after this.
+        self.db.commit()
