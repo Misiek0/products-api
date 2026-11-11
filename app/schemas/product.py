@@ -28,6 +28,13 @@ class ProductCreate(BaseModel):
         return value
 
 
+class ProductUpdate(ProductCreate):
+    """Input contract for PUT. PUT replaces the whole resource, so it needs
+    exactly the same fields and rules as creation. A separate class keeps
+    the two contracts independent: if PUT rules ever diverge from POST,
+    only this class changes."""
+
+
 class ProductListItem(BaseModel):
     """Short representation for the list endpoint (id, name, price)."""
 
@@ -39,7 +46,7 @@ class ProductListItem(BaseModel):
 
 
 class ProductRead(ProductListItem):
-    """Full representation for the details endpoint and POST response."""
+    """Full representation for the details endpoint and write responses."""
 
     category: Category
     quantity: int
